@@ -241,6 +241,10 @@ func (s *SugaredLogger) Logw(lvl zapcore.Level, msg string, keysAndValues ...int
 	s.log(lvl, msg, nil, keysAndValues)
 }
 
+func (s *SugaredLogger) Logw2(lvl zapcore.Level, msg string, keysAndValues ...interface{}) {
+	s.log2(lvl, msg, nil, keysAndValues)
+}
+
 // Debugw logs a message with some additional context. The variadic key-value
 // pairs are treated as they are in With.
 //
@@ -251,10 +255,19 @@ func (s *SugaredLogger) Debugw(msg string, keysAndValues ...interface{}) {
 	s.log(DebugLevel, msg, nil, keysAndValues)
 }
 
+func (s *SugaredLogger) Debugw2(msg string, keysAndValues ...interface{}) {
+	s.log2(DebugLevel, msg, nil, keysAndValues)
+}
+
 // Infow logs a message with some additional context. The variadic key-value
 // pairs are treated as they are in With.
 func (s *SugaredLogger) Infow(msg string, keysAndValues ...interface{}) {
 	s.log(InfoLevel, msg, nil, keysAndValues)
+}
+
+// 返回字符串
+func (s *SugaredLogger) Infow2(msg string, keysAndValues ...interface{}) string {
+	return s.log2(InfoLevel, msg, nil, keysAndValues)
 }
 
 // Warnw logs a message with some additional context. The variadic key-value
@@ -263,10 +276,18 @@ func (s *SugaredLogger) Warnw(msg string, keysAndValues ...interface{}) {
 	s.log(WarnLevel, msg, nil, keysAndValues)
 }
 
+func (s *SugaredLogger) Warnw2(msg string, keysAndValues ...interface{}) string {
+	return s.log2(WarnLevel, msg, nil, keysAndValues)
+}
+
 // Errorw logs a message with some additional context. The variadic key-value
 // pairs are treated as they are in With.
 func (s *SugaredLogger) Errorw(msg string, keysAndValues ...interface{}) {
 	s.log(ErrorLevel, msg, nil, keysAndValues)
+}
+
+func (s *SugaredLogger) Errorw2(msg string, keysAndValues ...interface{}) string {
+	return s.log2(ErrorLevel, msg, nil, keysAndValues)
 }
 
 // DPanicw logs a message with some additional context. In development, the
@@ -276,16 +297,28 @@ func (s *SugaredLogger) DPanicw(msg string, keysAndValues ...interface{}) {
 	s.log(DPanicLevel, msg, nil, keysAndValues)
 }
 
+func (s *SugaredLogger) DPanicw2(msg string, keysAndValues ...interface{}) string {
+	return s.log2(DPanicLevel, msg, nil, keysAndValues)
+}
+
 // Panicw logs a message with some additional context, then panics. The
 // variadic key-value pairs are treated as they are in With.
 func (s *SugaredLogger) Panicw(msg string, keysAndValues ...interface{}) {
 	s.log(PanicLevel, msg, nil, keysAndValues)
 }
 
+func (s *SugaredLogger) Panicw2(msg string, keysAndValues ...interface{}) string {
+	return s.log2(PanicLevel, msg, nil, keysAndValues)
+}
+
 // Fatalw logs a message with some additional context, then calls os.Exit. The
 // variadic key-value pairs are treated as they are in With.
 func (s *SugaredLogger) Fatalw(msg string, keysAndValues ...interface{}) {
 	s.log(FatalLevel, msg, nil, keysAndValues)
+}
+
+func (s *SugaredLogger) Fatalw2(msg string, keysAndValues ...interface{}) string {
+	return s.log2(FatalLevel, msg, nil, keysAndValues)
 }
 
 // Logln logs a message at provided level.
@@ -354,6 +387,21 @@ func (s *SugaredLogger) log(lvl zapcore.Level, template string, fmtArgs []interf
 	if ce := s.base.Check(lvl, msg); ce != nil {
 		ce.Write(s.sweetenFields(context)...)
 	}
+}
+
+// return string 
+func (s *SugaredLogger) log2(lvl zapcore.Level, template string, fmtArgs []interface{}, context []interface{}) string {
+	// If logging at this level is completely disabled, skip the overhead of
+	// string formatting.
+	if lvl < DPanicLevel && !s.base.Core().Enabled(lvl) {
+		return ""
+	}
+
+	msg := getMessage(template, fmtArgs)
+	if ce := s.base.Check(lvl, msg); ce != nil {
+		return ce.Write2(s.sweetenFields(context)...)
+	}
+	return ""
 }
 
 // logln message with Sprintln

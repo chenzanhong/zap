@@ -274,6 +274,77 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 	putCheckedEntry(ce)
 }
 
+func (ce *CheckedEntry) Write2(fields ...Field) string {
+	if ce == nil {
+		return ""
+	}
+
+	if ce.dirty {
+		if ce.ErrorOutput != nil {
+			// Make a best effort to detect unsafe re-use of this CheckedEntry.
+			// If the entry is dirty, log an internal error; because the
+			// CheckedEntry is being used after it was returned to the pool,
+			// the message may be an amalgamation from multiple call sites.
+			_, _ = fmt.Fprintf(
+				ce.ErrorOutput,
+				"%v Unsafe CheckedEntry re-use near Entry %+v.\n",
+				ce.Time,
+				ce.Entry,
+			)
+			_ = ce.ErrorOutput.Sync() // ignore error
+		}
+		return ""
+	}
+	ce.dirty = true
+
+	getLogContent := func (enc Encoder, ent Entry, fields []Field) (string, error) {
+		buf, err := enc.EncodeEntry(ent, fields)
+		if err != nil {
+			return "", err
+		}
+		
+		// _, err = c.out.Write(buf.Bytes())
+		logContent := buf.String()
+		buf.Free()
+		return logContent, nil
+		// if err != nil {
+		// 	return "", err
+		// }
+		// if ent.Level > ErrorLevel {
+		// 	// Since we may be crashing the program, sync the output.
+		// 	// Ignore Sync errors, pending a clean solution to issue #370.
+		// 	_ = c.Sync()
+		// }
+		// return "", nil
+	}
+
+	var err, tempError error
+	var result, tempResult string
+	for i := range ce.cores {
+		core := ce.cores[i].(*ioCore)
+		tempResult, tempError = getLogContent(core.enc, ce.Entry, fields)
+		result += tempResult
+		err = multierr.Append(err, tempError)
+	}
+	if err != nil && ce.ErrorOutput != nil {
+		_, _ = fmt.Fprintf(
+			ce.ErrorOutput,
+			"%v write error: %v\n",
+			ce.Time,
+			err,
+		)
+		_ = ce.ErrorOutput.Sync() // ignore error
+	}
+
+	hook := ce.after
+	if hook != nil {
+		hook.OnWrite(ce, fields)
+	}
+	putCheckedEntry(ce)
+
+	return result
+}
+
 // AddCore adds a Core that has agreed to log this CheckedEntry. It's intended to be
 // used by Core.Check implementations, and is safe to call on nil CheckedEntry
 // references.

@@ -109,6 +109,27 @@ func (c *ioCore) Write(ent Entry, fields []Field) error {
 	return nil
 }
 
+func (c *ioCore) Write2(ent Entry, fields []Field) (string, error) {
+	buf, err := c.enc.EncodeEntry(ent, fields)
+	if err != nil {
+		return "", err
+	}
+	
+	// _, err = c.out.Write(buf.Bytes())
+	logContent := buf.String()
+	buf.Free()
+	return logContent, nil
+	// if err != nil {
+	// 	return "", err
+	// }
+	// if ent.Level > ErrorLevel {
+	// 	// Since we may be crashing the program, sync the output.
+	// 	// Ignore Sync errors, pending a clean solution to issue #370.
+	// 	_ = c.Sync()
+	// }
+	// return "", nil
+}
+
 func (c *ioCore) Sync() error {
 	return c.out.Sync()
 }
