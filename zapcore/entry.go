@@ -297,12 +297,12 @@ func (ce *CheckedEntry) Write2(fields ...Field) string {
 	}
 	ce.dirty = true
 
-	getLogContent := func (enc Encoder, ent Entry, fields []Field) (string, error) {
+	getLogContent := func(enc Encoder, ent Entry, fields []Field) (string, error) {
 		buf, err := enc.EncodeEntry(ent, fields)
 		if err != nil {
 			return "", err
 		}
-		
+
 		// _, err = c.out.Write(buf.Bytes())
 		logContent := buf.String()
 		buf.Free()

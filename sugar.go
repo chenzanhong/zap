@@ -255,8 +255,8 @@ func (s *SugaredLogger) Debugw(msg string, keysAndValues ...interface{}) {
 	s.log(DebugLevel, msg, nil, keysAndValues)
 }
 
-func (s *SugaredLogger) Debugw2(msg string, keysAndValues ...interface{}) {
-	s.log2(DebugLevel, msg, nil, keysAndValues)
+func (s *SugaredLogger) Debugw2(msg string, keysAndValues ...interface{}) string {
+	return s.log2(DebugLevel, msg, nil, keysAndValues)
 }
 
 // Infow logs a message with some additional context. The variadic key-value
@@ -389,7 +389,7 @@ func (s *SugaredLogger) log(lvl zapcore.Level, template string, fmtArgs []interf
 	}
 }
 
-// return string 
+// return string
 func (s *SugaredLogger) log2(lvl zapcore.Level, template string, fmtArgs []interface{}, context []interface{}) string {
 	// If logging at this level is completely disabled, skip the overhead of
 	// string formatting.
